@@ -71,7 +71,8 @@ export default function App() {
     });
 
   const renderEntries = (parentId = null, level = 0) =>
-    entries
+    [...entries]
+      .reverse()
       .filter((e) => e.parentId === parentId)
       .map((e) => (
         <div
