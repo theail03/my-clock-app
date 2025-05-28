@@ -10,6 +10,12 @@ export default function App() {
     return `${h}:${m}:${s}`;
   };
 
+  const formatDateTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleString(); // Formato legible
+  };
+
   const [title, setTitle] = useState("");
   const [entries, setEntries] = useState(() => {
     const stored = localStorage.getItem("timeEntries");
@@ -46,6 +52,7 @@ export default function App() {
         parentId,
         title: entryTitle,
         start: now,
+        startTime: new Date(now).toISOString(),
         duration: 0,
         running: true,
       },
@@ -54,7 +61,15 @@ export default function App() {
 
   const stopEntry = (id) =>
     setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, running: false } : e))
+      prev.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              running: false,
+              endTime: new Date().toISOString(),
+            }
+          : e
+      )
     );
 
   const deleteEntry = (id) =>
@@ -87,6 +102,10 @@ export default function App() {
             <div style={{ flex: 1 }}>
               <strong>{e.title}</strong> — <span>{formatTime(e.duration)}</span>{" "}
               {e.running && "⏱️"}
+              <div style={{ fontSize: 12, color: "#aaa" }}>
+                Inicio: {formatDateTime(e.startTime)}
+                {e.endTime && <> | Fin: {formatDateTime(e.endTime)}</>}
+              </div>
             </div>
             {e.running && (
               <button onClick={() => stopEntry(e.id)}>Stop</button>
@@ -121,7 +140,10 @@ export default function App() {
       ));
 
   return (
-    <div className="container" style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "left" }}>
+    <div
+      className="container"
+      style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "left" }}
+    >
       <h1 style={{ textAlign: "center", marginBottom: 24 }}>Time Tracker</h1>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
