@@ -13,7 +13,7 @@ export default function App() {
   const formatDateTime = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
-    return d.toLocaleString(); // Formato legible
+    return d.toLocaleString(); // Readable format
   };
 
   const [title, setTitle] = useState("");
@@ -23,6 +23,8 @@ export default function App() {
   });
   const [creatingSub, setCreatingSub] = useState(null);
   const [subTitle, setSubTitle] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   useEffect(() => {
     localStorage.setItem("timeEntries", JSON.stringify(entries));
@@ -85,6 +87,11 @@ export default function App() {
       return prev.filter((e) => !idsToDelete.has(e.id));
     });
 
+  const updateTitle = (id, newTitle) =>
+    setEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, title: newTitle } : e))
+    );
+
   const renderEntries = (parentId = null, level = 0) =>
     [...entries]
       .reverse()
@@ -100,17 +107,59 @@ export default function App() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: 1 }}>
-              <strong>{e.title}</strong> — <span>{formatTime(e.duration)}</span>{" "}
-              {e.running && "⏱️"}
+              {editingId === e.id ? (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    style={{ fontWeight: "bold", flex: 1 }}
+                    value={editingTitle}
+                    onChange={(ev) => setEditingTitle(ev.target.value)}
+                  />
+                  <button
+                    onClick={() => {
+                      updateTitle(e.id, editingTitle);
+                      setEditingId(null);
+                      setEditingTitle("");
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditingTitle("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <strong>{e.title}</strong>
+                  {!e.running && (
+                    <button
+                      onClick={() => {
+                        setEditingId(e.id);
+                        setEditingTitle(e.title);
+                      }}
+                      style={{ marginLeft: 6 }}
+                    >
+                      Edit
+                    </button>
+                  )}
+                </>
+              )}
+              <div>
+                ⏱ {formatTime(e.duration)} {e.running && "🟢"}
+              </div>
               <div style={{ fontSize: 12, color: "#aaa" }}>
-                Inicio: {formatDateTime(e.startTime)}
-                {e.endTime && <> | Fin: {formatDateTime(e.endTime)}</>}
+                Start: {formatDateTime(e.startTime)}
+                {e.endTime && <> | End: {formatDateTime(e.endTime)}</>}
               </div>
             </div>
             {e.running && (
               <button onClick={() => stopEntry(e.id)}>Stop</button>
             )}
-            <button onClick={() => setCreatingSub(e.id)}>Add Sub-entry</button>
+            <button onClick={() => setCreatingSub(e.id)}>Add Sub</button>
             <button onClick={() => deleteEntry(e.id)}>Delete</button>
           </div>
 
@@ -118,7 +167,7 @@ export default function App() {
             <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
               <input
                 style={{ flex: 1 }}
-                placeholder="Sub-entry description"
+                placeholder="Sub-entry title"
                 value={subTitle}
                 onChange={(e) => setSubTitle(e.target.value)}
               />
@@ -129,7 +178,7 @@ export default function App() {
                   setCreatingSub(null);
                 }}
               >
-                Start Sub
+                Start
               </button>
               <button onClick={() => setCreatingSub(null)}>Cancel</button>
             </div>
