@@ -149,14 +149,21 @@ export default function App() {
               <div>
                 ⏱ {formatTime(e.duration)} {e.running && "🟢"}
               </div>
-              <div style={{ fontSize: 12, color: "#aaa" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#333",
+                  backgroundColor: "#f0f0f0",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  marginTop: 4,
+                }}
+              >
                 Start: {formatDateTime(e.startTime)}
                 {e.endTime && <> | End: {formatDateTime(e.endTime)}</>}
               </div>
             </div>
-            {e.running && (
-              <button onClick={() => stopEntry(e.id)}>Stop</button>
-            )}
+            {e.running && <button onClick={() => stopEntry(e.id)}>Stop</button>}
             <button onClick={() => setCreatingSub(e.id)}>Add Sub</button>
             <button onClick={() => deleteEntry(e.id)}>Delete</button>
           </div>
