@@ -13,7 +13,7 @@ export default function App() {
   const formatDateTime = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
-    return d.toLocaleString(); // Readable format
+    return d.toLocaleString();
   };
 
   const [title, setTitle] = useState("");
@@ -135,17 +135,15 @@ export default function App() {
               ) : (
                 <>
                   <strong>{e.title}</strong>
-                  {!e.running && (
-                    <button
-                      onClick={() => {
-                        setEditingId(e.id);
-                        setEditingTitle(e.title);
-                      }}
-                      style={{ marginLeft: 6 }}
-                    >
-                      Edit
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      setEditingId(e.id);
+                      setEditingTitle(e.title);
+                    }}
+                    style={{ marginLeft: 6 }}
+                  >
+                    Edit
+                  </button>
                 </>
               )}
               <div>
