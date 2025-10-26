@@ -92,6 +92,15 @@ export default function App() {
       prev.map((e) => (e.id === id ? { ...e, title: newTitle } : e))
     );
 
+  const clearAllEntries = () => {
+    if (entries.length === 0) return;
+    const ok = window.confirm(
+      "Delete ALL entries? This action cannot be undone."
+    );
+    if (!ok) return;
+    setEntries([]);
+  };
+
   const renderEntries = (parentId = null, level = 0) =>
     [...entries]
       .reverse()
@@ -215,6 +224,7 @@ export default function App() {
         >
           Start Timer
         </button>
+        <button onClick={clearAllEntries}>Delete all</button>
       </div>
 
       {entries.length === 0 ? (
