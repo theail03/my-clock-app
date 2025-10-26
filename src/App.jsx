@@ -224,7 +224,6 @@ export default function App() {
         >
           Start Timer
         </button>
-        <button onClick={clearAllEntries}>Delete all</button>
       </div>
 
       {entries.length === 0 ? (
@@ -234,6 +233,18 @@ export default function App() {
       ) : (
         <div>{renderEntries()}</div>
       )}
+
+      <div
+        style={{
+          marginTop: 32,
+          paddingTop: 16,
+          borderTop: "1px dashed #aaa",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <button onClick={clearAllEntries}>Delete all entries</button>
+      </div>
     </div>
   );
 }
