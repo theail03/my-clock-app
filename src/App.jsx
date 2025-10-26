@@ -101,6 +101,23 @@ export default function App() {
     setEntries([]);
   };
 
+  const copyAllEntries = async () => {
+    const data = JSON.stringify(entries, null, 2);
+    try {
+      await navigator.clipboard.writeText(data);
+      alert("Entries JSON copied to clipboard.");
+    } catch {
+      // Fallback for environments without navigator.clipboard
+      const ta = document.createElement("textarea");
+      ta.value = data;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      alert("Entries JSON copied to clipboard.");
+    }
+  };
+
   const renderEntries = (parentId = null, level = 0) =>
     [...entries]
       .reverse()
@@ -220,7 +237,7 @@ export default function App() {
             setTitle("");
           }}
         >
-          Start Timer
+            Start Timer
         </button>
       </div>
 
@@ -238,9 +255,12 @@ export default function App() {
           paddingTop: 16,
           borderTop: "1px dashed #aaa",
           display: "flex",
+          gap: 12,
           justifyContent: "center",
+          flexWrap: "wrap",
         }}
       >
+        <button onClick={copyAllEntries}>Copy entries JSON</button>
         <button onClick={clearAllEntries}>Delete all entries</button>
       </div>
     </div>
