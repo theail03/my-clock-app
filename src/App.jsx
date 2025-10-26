@@ -42,6 +42,20 @@ export default function App() {
     return () => clearInterval(tickRef.current);
   }, []);
 
+  // Update browser tab title with current running task time
+  useEffect(() => {
+    const running = entries.filter((e) => e.running);
+    if (running.length > 0) {
+      const current = running.reduce((a, b) => (a.start > b.start ? a : b));
+      document.title = `${formatTime(current.duration ?? 0)} • ${current.title} — Time Tracker`;
+    } else {
+      document.title = "Time Tracker";
+    }
+    return () => {
+      document.title = "Time Tracker";
+    };
+  }, [entries]);
+
   const startEntry = (customTitle, parentId = null) => {
     const now = Date.now();
     const entryTitle = customTitle.trim();
@@ -107,7 +121,6 @@ export default function App() {
       await navigator.clipboard.writeText(data);
       alert("Entries JSON copied to clipboard.");
     } catch {
-      // Fallback for environments without navigator.clipboard
       const ta = document.createElement("textarea");
       ta.value = data;
       document.body.appendChild(ta);
@@ -237,7 +250,7 @@ export default function App() {
             setTitle("");
           }}
         >
-            Start Timer
+          Start Timer
         </button>
       </div>
 
