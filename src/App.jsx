@@ -207,8 +207,6 @@ export default function App() {
       className="container"
       style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "left" }}
     >
-      <h1 style={{ textAlign: "center", marginBottom: 24 }}>Time Tracker</h1>
-
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         <input
           style={{ flex: 1 }}
