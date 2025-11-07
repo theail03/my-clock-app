@@ -42,7 +42,6 @@ export default function App() {
     return () => clearInterval(tickRef.current);
   }, []);
 
-  // Update browser tab title with current running task time
   useEffect(() => {
     const running = entries.filter((e) => e.running);
     if (running.length > 0) {
@@ -131,6 +130,34 @@ export default function App() {
     }
   };
 
+  const isSameLocalDate = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const copyTodayEntries = async () => {
+    const today = new Date();
+    const todayEntries = entries.filter((e) => {
+      if (!e.startTime) return false;
+      const d = new Date(e.startTime);
+      return isSameLocalDate(d, today);
+    });
+
+    const data = JSON.stringify(todayEntries, null, 2);
+    try {
+      await navigator.clipboard.writeText(data);
+      alert("Today's entries JSON copied to clipboard.");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = data;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      alert("Today's entries JSON copied to clipboard.");
+    }
+  };
+
   const renderEntries = (parentId = null, level = 0) =>
     [...entries]
       .reverse()
@@ -153,7 +180,7 @@ export default function App() {
                     value={editingTitle}
                     onChange={(ev) => setEditingTitle(ev.target.value)}
                   />
-                  <button
+                <button
                     onClick={() => {
                       updateTitle(e.id, editingTitle);
                       setEditingId(null);
@@ -274,6 +301,7 @@ export default function App() {
         }}
       >
         <button onClick={copyAllEntries}>Copy entries JSON</button>
+        <button onClick={copyTodayEntries}>Copy today's entries JSON</button>
         <button onClick={clearAllEntries}>Delete all entries</button>
       </div>
     </div>
