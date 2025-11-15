@@ -25,6 +25,7 @@ export default function App() {
   const [subTitle, setSubTitle] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [tagInputs, setTagInputs] = useState({});
 
   useEffect(() => {
     localStorage.setItem("timeEntries", JSON.stringify(entries));
@@ -46,7 +47,9 @@ export default function App() {
     const running = entries.filter((e) => e.running);
     if (running.length > 0) {
       const current = running.reduce((a, b) => (a.start > b.start ? a : b));
-      document.title = `${formatTime(current.duration ?? 0)} • ${current.title} — Time Tracker`;
+      document.title = `${formatTime(current.duration ?? 0)} • ${
+        current.title
+      } — Time Tracker`;
     } else {
       document.title = "Time Tracker";
     }
@@ -70,6 +73,7 @@ export default function App() {
         startTime: new Date(now).toISOString(),
         duration: 0,
         running: true,
+        tags: [],
       },
     ]);
   };
@@ -104,6 +108,35 @@ export default function App() {
     setEntries((prev) =>
       prev.map((e) => (e.id === id ? { ...e, title: newTitle } : e))
     );
+
+  const addTagsToEntry = (id, tagsToAdd) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== id) return e;
+        const currentTags = e.tags || [];
+        const newTags = [];
+        tagsToAdd.forEach((t) => {
+          if (t && !currentTags.includes(t)) {
+            newTags.push(t);
+          }
+        });
+        return { ...e, tags: [...currentTags, ...newTags] };
+      })
+    );
+  };
+
+  const removeTagFromEntry = (id, tagToRemove) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              tags: (e.tags || []).filter((t) => t !== tagToRemove),
+            }
+          : e
+      )
+    );
+  };
 
   const clearAllEntries = () => {
     if (entries.length === 0) return;
@@ -180,7 +213,7 @@ export default function App() {
                     value={editingTitle}
                     onChange={(ev) => setEditingTitle(ev.target.value)}
                   />
-                <button
+                  <button
                     onClick={() => {
                       updateTitle(e.id, editingTitle);
                       setEditingId(null);
@@ -199,19 +232,89 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <strong>{e.title}</strong>
                   <button
                     onClick={() => {
                       setEditingId(e.id);
                       setEditingTitle(e.title);
                     }}
-                    style={{ marginLeft: 6 }}
                   >
                     Edit
                   </button>
-                </>
+
+                  {(e.tags || []).map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        fontSize: 10,
+                        padding: "2px 6px",
+                        borderRadius: 10,
+                        border: "1px solid #ccc",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTagFromEntry(e.id, tag)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: 10,
+                          lineHeight: 1,
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+
+                  <input
+                    style={{
+                      fontSize: 10,
+                      padding: "2px 4px",
+                      minWidth: 80,
+                    }}
+                    placeholder="tags (comma)"
+                    value={tagInputs[e.id] || ""}
+                    onChange={(ev) =>
+                      setTagInputs((prev) => ({
+                        ...prev,
+                        [e.id]: ev.target.value,
+                      }))
+                    }
+                  />
+                  <button
+                    style={{ fontSize: 10, padding: "2px 6px" }}
+                    onClick={() => {
+                      const raw = (tagInputs[e.id] || "").trim();
+                      if (!raw) return;
+                      const tags = raw
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean);
+                      if (tags.length === 0) return;
+                      addTagsToEntry(e.id, tags);
+                      setTagInputs((prev) => ({ ...prev, [e.id]: "" }));
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
               )}
+
               <div>
                 ⏱ {formatTime(e.duration)} {e.running && "🟢"}
               </div>
@@ -229,6 +332,7 @@ export default function App() {
                 {e.endTime && <> | End: {formatDateTime(e.endTime)}</>}
               </div>
             </div>
+
             {e.running && <button onClick={() => stopEntry(e.id)}>Stop</button>}
             <button onClick={() => setCreatingSub(e.id)}>Add Sub</button>
             <button onClick={() => deleteEntry(e.id)}>Delete</button>
@@ -240,7 +344,7 @@ export default function App() {
                 style={{ flex: 1 }}
                 placeholder="Sub-entry title"
                 value={subTitle}
-                onChange={(e) => setSubTitle(e.target.value)}
+                onChange={(ev) => setSubTitle(ev.target.value)}
               />
               <button
                 onClick={() => {
