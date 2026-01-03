@@ -16,6 +16,18 @@ export default function App() {
     return d.toLocaleString();
   };
 
+  // --- NEW: Helper to gather system info automatically ---
+  const getSystemInfo = () => {
+    return {
+      exportedAt: new Date().toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: navigator.userAgent, // Contains detailed Browser & OS info
+      language: navigator.language,
+      platform: navigator.platform,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+    };
+  };
+
   const [title, setTitle] = useState("");
   
   // 1. Load entries
@@ -24,7 +36,7 @@ export default function App() {
     return stored ? JSON.parse(stored) : [];
   });
 
-  // 2. Load notes (NEW)
+  // 2. Load notes
   const [notes, setNotes] = useState(() => {
     return localStorage.getItem("globalNotes") || "";
   });
@@ -39,7 +51,7 @@ export default function App() {
     localStorage.setItem("timeEntries", JSON.stringify(entries));
   }, [entries]);
 
-  // 3. Save notes when they change (NEW)
+  // 3. Save notes when they change
   useEffect(() => {
     localStorage.setItem("globalNotes", notes);
   }, [notes]);
@@ -160,17 +172,18 @@ export default function App() {
     setEntries([]);
   };
 
-  // 4. Update Copy Logic to include Notes
+  // 4. Update Copy Logic to include Notes AND System Info
   const copyAllEntries = async () => {
     const exportData = {
-      notes: notes, // Include the manual notes
-      entries: entries,
+      notes: notes,               // Your manual text
+      systemInfo: getSystemInfo(), // Automatic browser/OS info
+      entries: entries,           // The time data
     };
     
     const data = JSON.stringify(exportData, null, 2);
     try {
       await navigator.clipboard.writeText(data);
-      alert("Entries and notes copied to clipboard.");
+      alert("Entries, notes, and system info copied.");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = data;
@@ -178,7 +191,7 @@ export default function App() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Entries and notes copied to clipboard.");
+      alert("Entries, notes, and system info copied.");
     }
   };
 
@@ -196,14 +209,15 @@ export default function App() {
     });
 
     const exportData = {
-      notes: notes, // Include the manual notes
-      entries: todayEntries,
+      notes: notes,                // Your manual text
+      systemInfo: getSystemInfo(), // Automatic browser/OS info
+      entries: todayEntries,       // The time data
     };
 
     const data = JSON.stringify(exportData, null, 2);
     try {
       await navigator.clipboard.writeText(data);
-      alert("Today's entries and notes copied to clipboard.");
+      alert("Today's data (with notes & info) copied.");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = data;
@@ -211,7 +225,7 @@ export default function App() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Today's entries and notes copied to clipboard.");
+      alert("Today's data (with notes & info) copied.");
     }
   };
 
@@ -417,10 +431,10 @@ export default function App() {
         <div>{renderEntries()}</div>
       )}
 
-      {/* 5. New Notes Section */}
+      {/* 5. Notes Section */}
       <div style={{ marginTop: 32 }}>
         <label style={{ display: "block", marginBottom: 8, fontWeight: "bold" }}>
-          Session Notes (System Info, User, etc.):
+          Session Notes:
         </label>
         <textarea
           style={{
@@ -430,7 +444,7 @@ export default function App() {
             boxSizing: "border-box",
             marginBottom: "16px",
           }}
-          placeholder="Type user, computer name, or any other details here..."
+          placeholder="Type any manual notes here (ticket numbers, user name, etc.)..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
