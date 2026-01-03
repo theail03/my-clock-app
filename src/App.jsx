@@ -17,10 +17,18 @@ export default function App() {
   };
 
   const [title, setTitle] = useState("");
+  
+  // 1. Load entries
   const [entries, setEntries] = useState(() => {
     const stored = localStorage.getItem("timeEntries");
     return stored ? JSON.parse(stored) : [];
   });
+
+  // 2. Load notes (NEW)
+  const [notes, setNotes] = useState(() => {
+    return localStorage.getItem("globalNotes") || "";
+  });
+
   const [creatingSub, setCreatingSub] = useState(null);
   const [subTitle, setSubTitle] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -30,6 +38,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("timeEntries", JSON.stringify(entries));
   }, [entries]);
+
+  // 3. Save notes when they change (NEW)
+  useEffect(() => {
+    localStorage.setItem("globalNotes", notes);
+  }, [notes]);
 
   const tickRef = useRef(null);
   useEffect(() => {
@@ -147,11 +160,17 @@ export default function App() {
     setEntries([]);
   };
 
+  // 4. Update Copy Logic to include Notes
   const copyAllEntries = async () => {
-    const data = JSON.stringify(entries, null, 2);
+    const exportData = {
+      notes: notes, // Include the manual notes
+      entries: entries,
+    };
+    
+    const data = JSON.stringify(exportData, null, 2);
     try {
       await navigator.clipboard.writeText(data);
-      alert("Entries JSON copied to clipboard.");
+      alert("Entries and notes copied to clipboard.");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = data;
@@ -159,7 +178,7 @@ export default function App() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Entries JSON copied to clipboard.");
+      alert("Entries and notes copied to clipboard.");
     }
   };
 
@@ -176,10 +195,15 @@ export default function App() {
       return isSameLocalDate(d, today);
     });
 
-    const data = JSON.stringify(todayEntries, null, 2);
+    const exportData = {
+      notes: notes, // Include the manual notes
+      entries: todayEntries,
+    };
+
+    const data = JSON.stringify(exportData, null, 2);
     try {
       await navigator.clipboard.writeText(data);
-      alert("Today's entries JSON copied to clipboard.");
+      alert("Today's entries and notes copied to clipboard.");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = data;
@@ -187,7 +211,7 @@ export default function App() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Today's entries JSON copied to clipboard.");
+      alert("Today's entries and notes copied to clipboard.");
     }
   };
 
@@ -393,9 +417,27 @@ export default function App() {
         <div>{renderEntries()}</div>
       )}
 
+      {/* 5. New Notes Section */}
+      <div style={{ marginTop: 32 }}>
+        <label style={{ display: "block", marginBottom: 8, fontWeight: "bold" }}>
+          Session Notes (System Info, User, etc.):
+        </label>
+        <textarea
+          style={{
+            width: "100%",
+            height: "80px",
+            padding: "8px",
+            boxSizing: "border-box",
+            marginBottom: "16px",
+          }}
+          placeholder="Type user, computer name, or any other details here..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+
       <div
         style={{
-          marginTop: 32,
           paddingTop: 16,
           borderTop: "1px dashed #aaa",
           display: "flex",
