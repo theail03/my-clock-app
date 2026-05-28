@@ -59,6 +59,8 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [tagInputs, setTagInputs] = useState({});
+  const [rangeStartDate, setRangeStartDate] = useState("");
+  const [rangeEndDate, setRangeEndDate] = useState("");
 
   useEffect(() => {
     localStorage.setItem("timeEntries", JSON.stringify(entries));
@@ -185,18 +187,18 @@ export default function App() {
     setEntries([]);
   };
 
-  // 4. Update Copy Logic to include Notes AND System Info
-  const copyAllEntries = async () => {
+  const copyEntriesJson = async (selectedEntries, successMessage, extra = {}) => {
     const exportData = {
+      ...extra,
       notes: notes,               // Your manual text
       systemInfo: getSystemInfo(), // Automatic browser/OS info
-      entries: entries.map(withExportTimes), // The time data
+      entries: selectedEntries.map(withExportTimes), // The time data
     };
     
     const data = JSON.stringify(exportData, null, 2);
     try {
       await navigator.clipboard.writeText(data);
-      alert("Entries, notes, and system info copied.");
+      alert(successMessage);
     } catch {
       const ta = document.createElement("textarea");
       ta.value = data;
@@ -204,8 +206,13 @@ export default function App() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Entries, notes, and system info copied.");
+      alert(successMessage);
     }
+  };
+
+  // 4. Update Copy Logic to include Notes AND System Info
+  const copyAllEntries = async () => {
+    await copyEntriesJson(entries, "Entries, notes, and system info copied.");
   };
 
   const isSameLocalDate = (a, b) =>
@@ -221,25 +228,49 @@ export default function App() {
       return isSameLocalDate(d, today);
     });
 
-    const exportData = {
-      notes: notes,                // Your manual text
-      systemInfo: getSystemInfo(), // Automatic browser/OS info
-      entries: todayEntries.map(withExportTimes), // The time data
-    };
+    await copyEntriesJson(todayEntries, "Today's data (with notes & info) copied.");
+  };
 
-    const data = JSON.stringify(exportData, null, 2);
-    try {
-      await navigator.clipboard.writeText(data);
-      alert("Today's data (with notes & info) copied.");
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = data;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      alert("Today's data (with notes & info) copied.");
+  const dateInputToLocalDate = (value, endOfDay = false) => {
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return endOfDay
+      ? new Date(year, month - 1, day, 23, 59, 59, 999)
+      : new Date(year, month - 1, day, 0, 0, 0, 0);
+  };
+
+  const copyRangeEntries = async () => {
+    if (!rangeStartDate || !rangeEndDate) {
+      alert("Choose a start and end date first.");
+      return;
     }
+
+    const rangeStart = dateInputToLocalDate(rangeStartDate);
+    const rangeEnd = dateInputToLocalDate(rangeEndDate, true);
+
+    if (rangeStart > rangeEnd) {
+      alert("Start date must be before or equal to end date.");
+      return;
+    }
+
+    const rangeEntries = entries.filter((e) => {
+      if (!e.startTime) return false;
+      const startedAt = new Date(e.startTime);
+      return startedAt >= rangeStart && startedAt <= rangeEnd;
+    });
+
+    await copyEntriesJson(
+      rangeEntries,
+      `Entries from ${rangeStartDate} to ${rangeEndDate} copied.`,
+      {
+        range: {
+          startDate: rangeStartDate,
+          endDate: rangeEndDate,
+          startDateLocal: rangeStart.toLocaleString(),
+          endDateLocal: rangeEnd.toLocaleString(),
+        },
+      }
+    );
   };
 
   const renderEntries = (parentId = null, level = 0) =>
@@ -415,10 +446,7 @@ export default function App() {
       ));
 
   return (
-    <div
-      className="container"
-      style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "left" }}
-    >
+    <div className="container">
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         <input
           style={{ flex: 1 }}
@@ -463,19 +491,41 @@ export default function App() {
         />
       </div>
 
-      <div
-        style={{
-          paddingTop: 16,
-          borderTop: "1px dashed #aaa",
-          display: "flex",
-          gap: 12,
-          justifyContent: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <button onClick={copyAllEntries}>Copy entries JSON</button>
-        <button onClick={copyTodayEntries}>Copy today's entries JSON</button>
-        <button onClick={clearAllEntries}>Delete all entries</button>
+      <div className="export-panel">
+        <div className="export-header">
+          <div>
+            <h2>Export JSON</h2>
+            <p>Copy all entries, today, or a custom local date range.</p>
+          </div>
+          <button className="danger-button" onClick={clearAllEntries}>
+            Delete all entries
+          </button>
+        </div>
+
+        <div className="export-actions">
+          <button onClick={copyAllEntries}>All entries</button>
+          <button onClick={copyTodayEntries}>Today</button>
+        </div>
+
+        <div className="range-export">
+          <label>
+            <span>From</span>
+            <input
+              type="date"
+              value={rangeStartDate}
+              onChange={(e) => setRangeStartDate(e.target.value)}
+            />
+          </label>
+          <label>
+            <span>To</span>
+            <input
+              type="date"
+              value={rangeEndDate}
+              onChange={(e) => setRangeEndDate(e.target.value)}
+            />
+          </label>
+          <button onClick={copyRangeEntries}>Copy range</button>
+        </div>
       </div>
     </div>
   );
