@@ -16,10 +16,23 @@ export default function App() {
     return d.toLocaleString();
   };
 
+  const withExportTimes = (entry) => ({
+    ...entry,
+    startTime: formatDateTime(entry.startTime),
+    startTimeUtc: entry.startTime,
+    ...(entry.endTime
+      ? {
+          endTime: formatDateTime(entry.endTime),
+          endTimeUtc: entry.endTime,
+        }
+      : {}),
+  });
+
   // --- NEW: Helper to gather system info automatically ---
   const getSystemInfo = () => {
     return {
-      exportedAt: new Date().toISOString(),
+      exportedAt: new Date().toLocaleString(),
+      exportedAtUtc: new Date().toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       userAgent: navigator.userAgent, // Contains detailed Browser & OS info
       language: navigator.language,
@@ -177,7 +190,7 @@ export default function App() {
     const exportData = {
       notes: notes,               // Your manual text
       systemInfo: getSystemInfo(), // Automatic browser/OS info
-      entries: entries,           // The time data
+      entries: entries.map(withExportTimes), // The time data
     };
     
     const data = JSON.stringify(exportData, null, 2);
@@ -211,7 +224,7 @@ export default function App() {
     const exportData = {
       notes: notes,                // Your manual text
       systemInfo: getSystemInfo(), // Automatic browser/OS info
-      entries: todayEntries,       // The time data
+      entries: todayEntries.map(withExportTimes), // The time data
     };
 
     const data = JSON.stringify(exportData, null, 2);
