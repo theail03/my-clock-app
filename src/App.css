@@ -81,6 +81,79 @@
   border-color: #ffb3b3;
 }
 
+.time-details {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.time-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #334155;
+  background: #eef3f7;
+  font-size: 12px;
+}
+
+.time-row-edited {
+  color: #123c69;
+  background: #e7f0fb;
+  border: 1px solid #c5d9ef;
+}
+
+.time-label {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.small-button {
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.time-editor {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #d9e1e8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.time-editor label {
+  display: grid;
+  gap: 4px;
+  color: #46596b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.time-editor-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.time-editor-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 @media (max-width: 680px) {
   .container {
     padding: 24px 16px;
@@ -95,6 +168,20 @@
 
   .range-export input,
   .export-panel button {
+    width: 100%;
+  }
+
+  .time-row {
+    width: 100%;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .time-editor,
+  .time-editor-actions,
+  .time-editor label,
+  .time-editor input,
+  .time-editor-actions button {
     width: 100%;
   }
 }

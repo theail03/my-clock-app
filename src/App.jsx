@@ -16,17 +16,70 @@ export default function App() {
     return d.toLocaleString();
   };
 
-  const withExportTimes = (entry) => ({
-    ...entry,
-    startTime: formatDateTime(entry.startTime),
-    startTimeUtc: entry.startTime,
-    ...(entry.endTime
-      ? {
-          endTime: formatDateTime(entry.endTime),
-          endTimeUtc: entry.endTime,
-        }
-      : {}),
-  });
+  const getEffectiveStartTime = (entry) =>
+    entry.editedStartTime || entry.startTime;
+
+  const getEffectiveEndTime = (entry) => entry.editedEndTime || entry.endTime;
+
+  const getEntryDuration = (entry) => {
+    const start = new Date(getEffectiveStartTime(entry)).getTime();
+    const end = entry.running
+      ? Date.now()
+      : new Date(getEffectiveEndTime(entry)).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+      return entry.duration ?? 0;
+    }
+    return end - start;
+  };
+
+  const toDateTimeLocalValue = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const offsetMs = d.getTimezoneOffset() * 60 * 1000;
+    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
+  };
+
+  const dateTimeLocalToIso = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  };
+
+  const withExportTimes = (entry) => {
+    const startTimeUtc = getEffectiveStartTime(entry);
+    const endTimeUtc = getEffectiveEndTime(entry);
+    const timeEdited = Boolean(entry.editedStartTime || entry.editedEndTime);
+    const {
+      startTime: _startTime,
+      endTime: _endTime,
+      editedStartTime: _editedStartTime,
+      editedEndTime: _editedEndTime,
+      duration: _duration,
+      ...rest
+    } = entry;
+
+    return {
+      ...rest,
+      duration: getEntryDuration(entry),
+      timeEdited,
+      startTime: formatDateTime(startTimeUtc),
+      startTimeUtc,
+      originalStartTime: formatDateTime(entry.startTime),
+      originalStartTimeUtc: entry.startTime,
+      ...(endTimeUtc
+        ? {
+            endTime: formatDateTime(endTimeUtc),
+            endTimeUtc,
+          }
+        : {}),
+      ...(entry.endTime
+        ? {
+            originalEndTime: formatDateTime(entry.endTime),
+            originalEndTimeUtc: entry.endTime,
+          }
+        : {}),
+    };
+  };
 
   // --- NEW: Helper to gather system info automatically ---
   const getSystemInfo = () => {
@@ -58,6 +111,8 @@ export default function App() {
   const [subTitle, setSubTitle] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [editingTimeId, setEditingTimeId] = useState(null);
+  const [timeDraft, setTimeDraft] = useState({ start: "", end: "" });
   const [tagInputs, setTagInputs] = useState({});
   const [rangeStartDate, setRangeStartDate] = useState("");
   const [rangeEndDate, setRangeEndDate] = useState("");
@@ -149,6 +204,66 @@ export default function App() {
       prev.map((e) => (e.id === id ? { ...e, title: newTitle } : e))
     );
 
+  const startEditingTime = (entry) => {
+    setEditingTimeId(entry.id);
+    setTimeDraft({
+      start: toDateTimeLocalValue(getEffectiveStartTime(entry)),
+      end: toDateTimeLocalValue(getEffectiveEndTime(entry)),
+    });
+  };
+
+  const cancelEditingTime = () => {
+    setEditingTimeId(null);
+    setTimeDraft({ start: "", end: "" });
+  };
+
+  const saveEditedTime = (entry) => {
+    const editedStartTime = dateTimeLocalToIso(timeDraft.start);
+    const editedEndTime = dateTimeLocalToIso(timeDraft.end);
+
+    if (!editedStartTime) {
+      alert("Choose a start time.");
+      return;
+    }
+
+    if (!entry.running && !editedEndTime) {
+      alert("Choose an end time.");
+      return;
+    }
+
+    if (
+      editedEndTime &&
+      new Date(editedEndTime).getTime() < new Date(editedStartTime).getTime()
+    ) {
+      alert("End time must be after start time.");
+      return;
+    }
+
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entry.id
+          ? {
+              ...e,
+              editedStartTime,
+              editedEndTime: editedEndTime || undefined,
+            }
+          : e
+      )
+    );
+    cancelEditingTime();
+  };
+
+  const resetEditedTime = (id) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? { ...e, editedStartTime: undefined, editedEndTime: undefined }
+          : e
+      )
+    );
+    cancelEditingTime();
+  };
+
   const addTagsToEntry = (id, tagsToAdd) => {
     setEntries((prev) =>
       prev.map((e) => {
@@ -223,8 +338,9 @@ export default function App() {
   const copyTodayEntries = async () => {
     const today = new Date();
     const todayEntries = entries.filter((e) => {
-      if (!e.startTime) return false;
-      const d = new Date(e.startTime);
+      const startTime = getEffectiveStartTime(e);
+      if (!startTime) return false;
+      const d = new Date(startTime);
       return isSameLocalDate(d, today);
     });
 
@@ -254,8 +370,9 @@ export default function App() {
     }
 
     const rangeEntries = entries.filter((e) => {
-      if (!e.startTime) return false;
-      const startedAt = new Date(e.startTime);
+      const startTime = getEffectiveStartTime(e);
+      if (!startTime) return false;
+      const startedAt = new Date(startTime);
       return startedAt >= rangeStart && startedAt <= rangeEnd;
     });
 
@@ -398,21 +515,73 @@ export default function App() {
               )}
 
               <div>
-                ⏱ {formatTime(e.duration)} {e.running && "🟢"}
+                ⏱ {formatTime(getEntryDuration(e))} {e.running && "🟢"}
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#333",
-                  backgroundColor: "#f0f0f0",
-                  padding: "2px 4px",
-                  borderRadius: "4px",
-                  marginTop: 4,
-                }}
-              >
-                Start: {formatDateTime(e.startTime)}
-                {e.endTime && <> | End: {formatDateTime(e.endTime)}</>}
-              </div>
+              {editingTimeId === e.id ? (
+                <div className="time-editor">
+                  <label>
+                    <span>Start</span>
+                    <input
+                      type="datetime-local"
+                      value={timeDraft.start}
+                      onChange={(ev) =>
+                        setTimeDraft((prev) => ({
+                          ...prev,
+                          start: ev.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>End</span>
+                    <input
+                      type="datetime-local"
+                      value={timeDraft.end}
+                      disabled={e.running}
+                      onChange={(ev) =>
+                        setTimeDraft((prev) => ({
+                          ...prev,
+                          end: ev.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <div className="time-editor-actions">
+                    <button onClick={() => saveEditedTime(e)}>Save time</button>
+                    <button onClick={cancelEditingTime}>Cancel</button>
+                    <button onClick={() => resetEditedTime(e.id)}>
+                      Reset to original
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="time-details">
+                  {(e.editedStartTime || e.editedEndTime) && (
+                    <div className="time-row time-row-edited">
+                      <span className="time-label">Edited</span>
+                      <span>
+                        Start: {formatDateTime(getEffectiveStartTime(e))}
+                        {getEffectiveEndTime(e) && (
+                          <> | End: {formatDateTime(getEffectiveEndTime(e))}</>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  <div className="time-row">
+                    <span className="time-label">Original</span>
+                    <span>
+                      Start: {formatDateTime(e.startTime)}
+                      {e.endTime && <> | End: {formatDateTime(e.endTime)}</>}
+                    </span>
+                  </div>
+                  <button
+                    className="small-button"
+                    onClick={() => startEditingTime(e)}
+                  >
+                    Edit time
+                  </button>
+                </div>
+              )}
             </div>
 
             {e.running && <button onClick={() => stopEntry(e.id)}>Stop</button>}
